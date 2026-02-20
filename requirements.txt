@@ -31,17 +31,14 @@ PyYAML>=6.0.1
 # Downloader universale per piattaforme video (YouTube, Vimeo, portali universitari)
 yt-dlp>=2024.3.10
 
-# --- Interactive UI (già in Colab ma specifichiamo per compatibilità) ---
-# Widget interattivi per Jupyter/Colab
-ipywidgets>=8.1.2
-
 # --- Utilities ---
 # Progress bar per visualizzare avanzamento elaborazione
 tqdm>=4.66.0
 
 # ====================================================================
 # NOTE:
-# - Google Colab ha già: numpy, pandas, matplotlib, scipy, jupyter
+# - Google Colab ha già: numpy, pandas, matplotlib, scipy, jupyter, ipywidgets
+# - ipywidgets NON è incluso qui per evitare conflitti con Colab
 # - FFmpeg viene installato separatamente via: !apt-get install -y ffmpeg
 # - CUDA e CuDNN sono già configurati in Colab per GPU acceleration
 # ====================================================================
