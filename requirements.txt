@@ -1,6 +1,47 @@
-faster-whisper==1.0.1
-google-generativeai==0.4.1
-opencv-python-headless==4.9.0.80
-ipywidgets==8.1.2
-pyyaml==6.0.1
-yt-dlp==2024.03.10
+# ====================================================================
+# AI-Studio Requirements - Optimized for Google Colab
+# ====================================================================
+# Installa solo le librerie NON già presenti in Colab o che richiedono
+# versioni specifiche per il corretto funzionamento del progetto.
+# ====================================================================
+
+# --- Audio Processing ---
+# Whisper ottimizzato con CTranslate2 per trascrizione veloce su GPU
+faster-whisper>=1.0.3
+# Supporto per caricamento modelli Whisper
+huggingface-hub>=0.20.0
+
+# --- LLM (Google Gemini API) ---
+# SDK ufficiale Google per Gemini (Flash, Pro, Ultra)
+google-generativeai>=0.8.0
+# Protobuf necessario per Gemini API
+protobuf>=4.25.0
+
+# --- Computer Vision ---
+# OpenCV headless (senza GUI) ottimizzato per server/notebook
+opencv-python-headless>=4.9.0.80
+# Supporto per codifica/decodifica immagini
+Pillow>=10.2.0
+
+# --- Configuration Management ---
+# Parser YAML per config.yaml
+PyYAML>=6.0.1
+
+# --- Video Download ---
+# Downloader universale per piattaforme video (YouTube, Vimeo, portali universitari)
+yt-dlp>=2024.3.10
+
+# --- Interactive UI (già in Colab ma specifichiamo per compatibilità) ---
+# Widget interattivi per Jupyter/Colab
+ipywidgets>=8.1.2
+
+# --- Utilities ---
+# Progress bar per visualizzare avanzamento elaborazione
+tqdm>=4.66.0
+
+# ====================================================================
+# NOTE:
+# - Google Colab ha già: numpy, pandas, matplotlib, scipy, jupyter
+# - FFmpeg viene installato separatamente via: !apt-get install -y ffmpeg
+# - CUDA e CuDNN sono già configurati in Colab per GPU acceleration
+# ====================================================================
