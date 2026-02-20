@@ -47,7 +47,15 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
         "Esegui la modifica e restituisci ESCLUSIVAMENTE il nuovo codice LaTeX."
     )
     
-    response = model.generate_co = None, prompt_path: str = None) -> str:
+    response = model.generate_content(prompt_str)
+    
+    # Pulizia di sicurezza: rimuove eventuali formattazioni markdown "```latex" residue 
+    # che Gemini potrebbe inserire nonostante i divieti
+    clean_output = response.text.replace("```latex", "").replace("```", "").strip()
+    return clean_output
+
+def run_tutor_agent(user_question: str, lesson_transcript: str, 
+                    api_key: str = None, prompt_path: str = None) -> str:
     """
     Agente Tutor: Riceve una domanda e la trascrizione. Risponde in modo empatico 
     e discorsivo, rigorosamente in plain text (senza markdown).
@@ -71,15 +79,7 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
     )
     
     model = genai.GenerativeModel(
-        model_name=config.model_name
-    # Configurazione leggermente più morbida per permettere un tono empatico e naturale
-    generation_config = genai.types.GenerationConfig(
-        temperature=0.75,       # Più alto dell'editor per sembrare umano, ma basso per non allucinare
-        top_p=0.9,
-    )
-    
-    model = genai.GenerativeModel(
-        model_name="gemini-3-flash-preview",
+        model_name=config.model_name,
         system_instruction=system_instruction,
         generation_config=generation_config
     )

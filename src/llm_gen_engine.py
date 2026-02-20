@@ -117,19 +117,19 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
         # Invia il pacchetto multimodale intero alla sessione di chat
         response = chat_session.send_message(payload)
         final_latex_document.append(response.text)
-        il limite RPM configurato
+        
+        # CLEANUP: Elimina le immagini dai server Google per efficienza e privacy
+        for g_file in uploaded_files:
+            try:
+                genai.delete_file(g_file.name)
+            except Exception as e:
+                print(f"Errore eliminazione file {g_file.name}: {e}")
+        
+        # Garantisce di non superare il limite RPM configurato
         if idx < len(chunks) - 1:
             wait_time = 60 / config.rpm
             if config.debug_mode:
                 print(f"Attesa di {wait_time:.1f} secondi per rispettare il limite di {config.rpm} RPM...")
-            time.sleep(wait_timeile.name)
-            except Exception as e:
-                print(f"Errore eliminazione file {g_file.name}: {e}")
-        
-        # Garantisce di non superare MAI il limite di 2 richieste al minuto
-        if idx < len(chunks) - 1:
-            wait_for_limit = 60/rpm 
-            print(f"Attesa di 15 secondi per rispettare il limite di 5 RPM...")
-            time.sleep(wait_for_limit)
+            time.sleep(wait_time)
             
     return "\n\n".join(final_latex_document)
