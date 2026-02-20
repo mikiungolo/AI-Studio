@@ -1,4 +1,5 @@
 import os
+import time
 import google.generativeai as genai
 from typing import List, Dict
 
@@ -108,5 +109,9 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str,
                 genai.delete_file(g_file.name)
             except Exception as e:
                 print(f"Errore eliminazione file {g_file.name}: {e}")
+        
+        # Garantisce di non superare MAI il limite di 2 richieste al minuto
+        if idx < len(chunks) - 1:
+            time.sleep(55)
             
     return "\n\n".join(final_latex_document)
