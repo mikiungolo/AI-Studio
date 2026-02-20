@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+from config_loader import config
 
 def _load_text_file(filepath: str) -> str:
     """Helper per caricare i file di testo dei prompt."""
@@ -9,23 +10,31 @@ def _load_text_file(filepath: str) -> str:
         return file.read()
 
 def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: str, 
-                     api_key: str, prompt_path: str = "prompts/editor_prompt.txt") -> str:
+                     api_key: str = None, prompt_path: str = None) -> str:
     """
     Agente Chirurgo: Riceve un pezzo di LaTeX, la richiesta di modifica e l'intera 
     trascrizione. Restituisce SOLO il nuovo codice LaTeX sovrascrivibile.
+    Parametri LLM caricati da config.yaml.
     """
+    if api_key is None:
+        api_key = config.api_key
+    
+    if prompt_path is None:
+        prompt_path = config.editor_prompt_path
+    
     genai.configure(api_key=api_key)
     system_instruction = _load_text_file(prompt_path)
     
-    # Configurazione severissima: l'output DEVE essere solo codice stabile
+    # Configurazione severissima caricata da config.yaml
     generation_config = genai.types.GenerationConfig(
-        temperature=0.3,       # Molto basso: nessuna libertà creativa, solo esecuzione
-        top_p=0.8,
-        top_k=30,
+        temperature=config.editor_temperature,
+        top_p=config.editor_top_p,
+        top_k=config.editor_top_k,
+        max_output_tokens=config.editor_max_tokens
     )
     
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
+        model_name=config.model_name,
         system_instruction=system_instruction,
         generation_config=generation_config
     )
@@ -38,22 +47,31 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
         "Esegui la modifica e restituisci ESCLUSIVAMENTE il nuovo codice LaTeX."
     )
     
-    response = model.generate_content(prompt_str)
-    
-    # Pulizia di sicurezza: rimuove eventuali formattazioni markdown "```latex" residue 
-    # che Gemini potrebbe inserire nonostante i divieti
-    clean_output = response.text.replace("```latex", "").replace("```", "").strip()
-    return clean_output
-
-def run_tutor_agent(user_question: str, lesson_transcript: str, 
-                    api_key: str, prompt_path: str = "prompts/tutor_prompt.txt") -> str:
+    response = model.generate_co = None, prompt_path: str = None) -> str:
     """
     Agente Tutor: Riceve una domanda e la trascrizione. Risponde in modo empatico 
     e discorsivo, rigorosamente in plain text (senza markdown).
+    Parametri LLM caricati da config.yaml.
     """
+    if api_key is None:
+        api_key = config.api_key
+    
+    if prompt_path is None:
+        prompt_path = config.tutor_prompt_path
+    
     genai.configure(api_key=api_key)
     system_instruction = _load_text_file(prompt_path)
     
+    # Configurazione caricata da config.yaml
+    generation_config = genai.types.GenerationConfig(
+        temperature=config.tutor_temperature,
+        top_p=config.tutor_top_p,
+        top_k=config.tutor_top_k,
+        max_output_tokens=config.tutor_max_tokens
+    )
+    
+    model = genai.GenerativeModel(
+        model_name=config.model_name
     # Configurazione leggermente più morbida per permettere un tono empatico e naturale
     generation_config = genai.types.GenerationConfig(
         temperature=0.75,       # Più alto dell'editor per sembrare umano, ma basso per non allucinare
@@ -61,7 +79,7 @@ def run_tutor_agent(user_question: str, lesson_transcript: str,
     )
     
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
+        model_name="gemini-3-flash-preview",
         system_instruction=system_instruction,
         generation_config=generation_config
     )

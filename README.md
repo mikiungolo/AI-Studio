@@ -32,7 +32,9 @@ When the final document is ready, the `.tex` file is automatically downloaded to
 
 The repository is organized to separate the core engine from the user interface and the AI instructions:
 
+* `config.yaml`: **Centralized configuration file** - All system parameters (LLM, audio, vision) can be configured here without modifying the code.
 * `src/`: Contains the core Python modules.
+  * `config_loader.py`: Manages configuration loading and access.
   * `audio_processing.py`: Handles audio extraction, VAD, and transcription.
   * `vision_processing.py`: Handles video stream analysis and dynamic keyframe extraction.
   * `llm_engine.py`: Manages the API calls to the multimodal LLM and data synchronization.
@@ -40,6 +42,17 @@ The repository is organized to separate the core engine from the user interface 
 * `prompts/`: Isolated `.txt` files containing the system instructions and behavioral rules for the LLM.
 * `notebooks/`: The executable cloud notebook (`.ipynb`) containing the user interface.
 * `requirements.txt`: Project dependencies and required libraries.
+* `CONFIGURATION_GUIDE.md`: Detailed guide to the configuration system.
+
+### Configuration
+
+AI-Studio uses a **centralized configuration system** based on YAML files. This allows you to:
+- Modify LLM parameters (temperature, model, rate limits) without touching the code
+- Customize audio processing (Whisper model, VAD, sample rate)
+- Adjust computer vision (change threshold, blur, sensitivity)
+- Manage API keys through environment variables for security
+
+For complete details, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md).
 
 ### License
 This software is distributed under the **GNU GPL v3** license. It is free and open-source.
@@ -74,14 +87,27 @@ Quando il documento finale è pronto, il file `.tex` viene automaticamente scari
 
 Il repository è organizzato per separare il motore di elaborazione dall'interfaccia utente e dalle direttive per l'IA:
 
+* `config.yaml`: **File di configurazione centralizzato** - Tutti i parametri del sistema (LLM, audio, vision) sono configurabili qui senza modificare il codice.
 * `src/`: Contiene i moduli Python principali.
+  * `config_loader.py`: Gestisce il caricamento e l'accesso alla configurazione.
   * `audio_processing.py`: Gestisce l'estrazione audio, il VAD e la trascrizione.
   * `vision_processing.py`: Gestisce l'analisi del flusso video e l'estrazione dinamica dei frame.
-  * `llm_engine.py`: Gestisce le chiamate API all'LLM multimodale e la sincronizzazione dei dati.
+  * `llm_gen_engine.py`: Gestisce le chiamate API all'LLM multimodale e la sincronizzazione dei dati.
   * `interactive_agent.py`: Gestisce la logica dell'Editor e del Tutor sfruttando la cache.
 * `prompts/`: File di testo (`.txt`) isolati contenenti le istruzioni di sistema e le regole comportamentali per l'LLM.
 * `notebooks/`: Il notebook cloud esecutivo (`.ipynb`) che funge da interfaccia utente.
 * `requirements.txt`: Dipendenze e librerie necessarie.
+* `CONFIGURATION_GUIDE.md`: Guida dettagliata al sistema di configurazione.
+
+### Configurazione
+
+AI-Studio utilizza un **sistema di configurazione centralizzato** basato su file YAML. Questo permette di:
+- Modificare parametri LLM (temperatura, modello, rate limits) senza toccare il codice
+- Personalizzare audio processing (modello Whisper, VAD, sample rate)
+- Regolare computer vision (threshold cambiamento, blur, sensibilità)
+- Gestire API keys tramite variabili d'ambiente per sicurezza
+
+Per dettagli completi, consulta [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md).
 
 ### Licenza
 Questo software è distribuito sotto licenza **GNU GPL v3**. È libero e open source.

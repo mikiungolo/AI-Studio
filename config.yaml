@@ -1,0 +1,122 @@
+# ====================================================================
+# AI-Studio Configuration File
+# ====================================================================
+# Questo file centralizza tutti i parametri del sistema.
+# Modificando questi valori NON devi toccare il codice Python.
+# ====================================================================
+
+# --------------------------------------------------------------------
+# CONFIGURAZIONI LLM (Large Language Model)
+# --------------------------------------------------------------------
+llm:
+  # API Key di Google Gemini (può essere sovrascritta da variabile d'ambiente)
+  api_key: "${GOOGLE_API_KEY}"  # Usa variabile d'ambiente per sicurezza
+  
+  # Rate Limit: Richieste al minuto consentite dalla tua API
+  rpm: 5  # Requests Per Minute = 5 RPM, TPM = 250k, RPD Request per day = 20
+  
+  # Modello da utilizzare (vedi documentazione Google AI per i nomi corretti)
+  model_name: "gemini-3-flash-preview"
+  
+  # --- Configurazioni per il WRITER (Generazione appunti) ---
+  writer:
+    temperature: 0.5      # Basso = preciso e logico | Alto = creativo (range: 0.0-1.0)
+    top_p: 0.8            # Nucleus sampling: taglia token improbabili (range: 0.0-1.0)
+    top_k: 40             # Considera solo i K token più probabili (tipicamente 20-100)
+    max_output_tokens: 45000  # Limite massimo output per chunk (evita troncamenti)
+    chunk_duration_sec: 900   # Durata di ogni chunk in secondi (900s = 15 min)
+  
+  # --- Configurazioni per l'EDITOR (Refactoring LaTeX) ---
+  editor:
+    temperature: 0.3      # Severissimo: nessuna creatività, solo esecuzione precisa
+    top_p: 0.8            
+    top_k: 30             # Più restrittivo del writer per output deterministico
+    max_output_tokens: 8000  # Gli editor modificano sezioni più brevi
+  
+  # --- Configurazioni per il TUTOR (Q&A studente) ---
+  tutor:
+    temperature: 0.75     # Più alto per tono empatico e naturale (senza allucinazioni)
+    top_p: 0.9            # Permette più varietà lessicale per sembrare umano
+    top_k: 50             
+    max_output_tokens: 4000  # Le risposte sono più brevi degli appunti completi
+
+# --------------------------------------------------------------------
+# CONFIGURAZIONI AUDIO PROCESSING
+# --------------------------------------------------------------------
+audio:
+  # Modello Whisper per trascrizione (tiny, base, small, medium, large-v3)
+  # Nota: Modelli più grandi = migliore qualità ma più lenti
+  whisper_model_size: "large-v3"
+  
+  # Device di computazione (cpu, cuda, auto)
+  device: "cuda"  # Usa GPU se disponibile, altrimenti fallback su CPU
+  
+  # Tipo di computazione per GPU (float16, int8, float32)
+  compute_type: "float16"  # float16 è ottimale per GPU moderne
+  
+  # Beam size per la trascrizione (1-10, più alto = più accurato ma più lento)
+  beam_size: 5
+  
+  # Voice Activity Detection (VAD) - Scarta silenzi automaticamente
+  vad_enabled: true
+  vad_min_silence_duration_ms: 1000  # Millisecondi di silenzio prima di ignorare
+  
+  # File temporaneo audio estratto dal video
+  temp_audio_filename: "temp_audio.wav"
+  
+  # Parametri FFmpeg per estrazione audio
+  audio_sample_rate: 16000  # Hz - Whisper richiede 16kHz
+  audio_channels: 1         # Mono = 1, Stereo = 2
+
+# --------------------------------------------------------------------
+# CONFIGURAZIONI VISION PROCESSING (Computer Vision)
+# --------------------------------------------------------------------
+vision:
+  # Directory dove salvare i frame estratti
+  output_dir: "extracted_frames"
+  
+  # Threshold di cambiamento visivo per catturare un keyframe (0.0-1.0)
+  # 0.03 = 3% dello schermo deve cambiare per considerarlo una nuova slide
+  change_threshold: 0.03
+  
+  # Parametri GaussianBlur per ridurre il rumore
+  blur_kernel_size: 21  # Dimensione del kernel (deve essere dispari: 3, 5, 7, 11, 21...)
+  blur_sigma: 0         # Deviazione standard (0 = auto-calcolata)
+  
+  # Threshold per cv2.threshold (distinguere rumore da cambiamento reale)
+  # Valori più bassi = più sensibile | Valori più alti = ignora piccoli cambiamenti
+  pixel_threshold: 25   # Range: 0-255
+
+# --------------------------------------------------------------------
+# CONFIGURAZIONI PERCORSI FILE
+# --------------------------------------------------------------------
+paths:
+  # Directory dei prompt di sistema
+  prompts_dir: "prompts"
+  
+  # Nomi file prompt specifici
+  writer_prompt: "writer_system_prompt.txt"
+  editor_prompt: "reviewer_editor_prompt.txt"
+  tutor_prompt: "professor_q&a_prompt.txt"
+  
+  # Directory output finale
+  output_dir: "output"
+  
+  # Nome file LaTeX generato
+  output_latex_filename: "lecture_notes.tex"
+
+# --------------------------------------------------------------------
+# CONFIGURAZIONI GENERALI SISTEMA
+# --------------------------------------------------------------------
+system:
+  # Modalità debug: stampa log aggiuntivi
+  debug_mode: false
+  
+  # Abilita cleanup automatico dei file temporanei
+  auto_cleanup: true
+  
+  # Timeout per operazioni di rete (secondi)
+  network_timeout: 300
+  
+  # Lingua preferita (auto, it, en)
+  preferred_language: "auto"  # auto = rilevamento automatico dal video

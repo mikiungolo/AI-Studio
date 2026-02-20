@@ -48,6 +48,26 @@ coverage.xml
 *.cover
 *.py.cover
 .hypothesis/
+
+# ====================================================================
+# AI-Studio Specific
+# ====================================================================
+
+# Environment variables (API keys sensibili)
+.env
+
+# File temporanei generati durante l'elaborazione
+temp_audio.wav
+extracted_frames/
+output/
+
+# File di configurazione locali (se l'utente crea varianti)
+config.local.yaml
+config.*.yaml
+
+# Appunti LaTeX generati (opzionale, dipende se vuoi versionarli)
+*.tex
+!example.tex
 .pytest_cache/
 cover/
 

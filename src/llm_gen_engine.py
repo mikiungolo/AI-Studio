@@ -2,6 +2,7 @@ import os
 import time
 import google.generativeai as genai
 from typing import List, Dict
+from config_loader import config
 
 def _load_text_file(filepath: str) -> str:
     """Helper per caricare i file di testo (prompt e/o appunti precedenti)."""
@@ -10,8 +11,14 @@ def _load_text_file(filepath: str) -> str:
     with open(filepath, 'r', encoding='utf-8') as file:
         return file.read()
 
-def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_sec: int = 900) -> List[Dict]:
-    """Divide la lezione in blocchi logici (es. 15 minuti) senza tagliare le frasi."""
+def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_sec: int = None) -> List[Dict]:
+    """
+    Divide la lezione in blocchi logici senza tagliare le frasi.
+    La durata del chunk è configurabile in config.yaml.
+    """
+    if chunk_duration_sec is None:
+        chunk_duration_sec = config.chunk_duration_sec
+    
     chunks = []
     current_chunk_text = []
     current_chunk_images = []
@@ -46,10 +53,18 @@ def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_
         
     return chunks
 
-def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str, 
-                   prompt_path: str = "prompts/system_prompt.txt", 
-                   history_path: str = "") -> str:
-    """Motore principale che coordina LLM, memorie e generazione LaTeX."""
+def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str = None,
+                   prompt_path: str = None, history_path: str = "") -> str:
+    """
+    Motore principale che coordina LLM, memorie e generazione LaTeX.
+    Tutti i parametri LLM sono caricati da config.yaml.
+    """
+    
+    if api_key is None:
+        api_key = config.api_key
+    
+    if prompt_path is None:
+        prompt_path = config.writer_prompt_path
     
     genai.configure(api_key=api_key)
     
@@ -58,19 +73,19 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str,
     
     if previous_notes:
         # Inietta gli appunti passati direttamente nelle istruzioni di sistema
-        system_instruction += f"\n\NOTES UNTIL THE LAST LESSON (Use as context or base to generate new notes):\n{previous_notes}"
+        system_instruction += f"\n\nNOTES UNTIL THE LAST LESSON (Use as context or base to generate new notes):\n{previous_notes}"
 
-    # Configurazione parametri modello 
+    # Configurazione parametri modello (caricati da config.yaml)
     generation_config = genai.types.GenerationConfig(
-        temperature=0.5,       # basso: precisione logica, non creatività inutile
-        top_p=0.8,             # Taglia fuori le parole statisticamente improbabili
-        top_k=40,              # Considera solo i 40 token più probabili in ogni step
-        max_output_tokens=8192 # Evita che l'output venga troncato a metà (limite alto)
+        temperature=config.writer_temperature,
+        top_p=config.writer_top_p,
+        top_k=config.writer_top_k,
+        max_output_tokens=config.writer_max_tokens
     )
 
     # Inizializza il modello caricando le istruzioni di sistema e i vincoli di generazione
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
+        model_name=config.model_name,
         system_instruction=system_instruction,
         generation_config=generation_config
     )
@@ -102,16 +117,19 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str,
         # Invia il pacchetto multimodale intero alla sessione di chat
         response = chat_session.send_message(payload)
         final_latex_document.append(response.text)
-        
-        # CLEANUP: Elimina le immagini dai server Google per efficienza e privacy
-        for g_file in uploaded_files:
-            try:
-                genai.delete_file(g_file.name)
+        il limite RPM configurato
+        if idx < len(chunks) - 1:
+            wait_time = 60 / config.rpm
+            if config.debug_mode:
+                print(f"Attesa di {wait_time:.1f} secondi per rispettare il limite di {config.rpm} RPM...")
+            time.sleep(wait_timeile.name)
             except Exception as e:
                 print(f"Errore eliminazione file {g_file.name}: {e}")
         
         # Garantisce di non superare MAI il limite di 2 richieste al minuto
         if idx < len(chunks) - 1:
-            time.sleep(55)
+            wait_for_limit = 60/rpm 
+            print(f"Attesa di 15 secondi per rispettare il limite di 5 RPM...")
+            time.sleep(wait_for_limit)
             
     return "\n\n".join(final_latex_document)
