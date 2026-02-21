@@ -6,7 +6,7 @@
 
 ## 🇬🇧 English
 
-**AI-Studio** is an open-source software developed to automate the conversion of university video lectures into structured LaTeX notes. The system processes the audio track and the visual stream (slides/whiteboard) in parallel, generating an academic document that is coherent with your pre-existing study materials.
+**AI-Studio** is an open-source software developed to automate the conversion of university video lectures into structured LaTeX notes. The system supports **flexible input combinations**: video lectures, PDF slides, professor's notes, or any combination thereof. Students can choose which materials to provide based on availability, and the system will process them in parallel to generate a coherent academic document aligned with pre-existing study materials.
 
 ### Technical Manual: Architecture and Workflow
 
@@ -37,9 +37,26 @@ To speed up the upload of large video files, you can compress the file using **f
 ffmpeg -i "lecture.mp4" -vcodec libx264 -crf 28 -preset faster -acodec aac -b:a 128k "lecture_compressed.mp4"
 ```
 
-**Replace** `"lecture.mp4"` and `"lecture_compressed.mp4"` with the appropriate names of your files. This command significantly reduces file size while maintaining sufficient quality for transcription and frame extraction. 
+**Replace** `"lecture.mp4"` and `"lecture_compressed.mp4"` with the appropriate names of your files. This command significantly reduces file size while maintaining sufficient quality for transcription and frame extraction.
 
-To start generating notes, no external cloud storage is required. Users simply provide the video via direct temporary upload or URL. For lectures hosted on protected university portals, server-side downloading is supported by uploading a simple `cookies.txt` file extracted from the user's browser. During this preliminary phase, it is highly recommended to also upload the `.tex` file of previous notes to align the writing style and obtain a result consistent with the notes already taken during past lectures of the course under study.
+#### Input Sources
+
+AI-Studio supports **multiple input combinations** - choose what you have available:
+
+- **Video only**: Traditional video lecture processing (audio transcription + keyframe extraction)
+- **PDF slides only**: Process course slides without video
+- **PDF notes only**: Generate notes from professor's or other students' notes
+- **Combined sources**: Any combination of video + slides + notes
+
+The system intelligently chunks PDF documents (up to 20,000 words per chunk) and merges all sources into a unified processing pipeline optimized for Gemini's 1M token input capacity.
+
+**To start**, simply upload your chosen materials:
+- **Video**: Direct upload or URL (supports protected portals via `cookies.txt`)
+- **PDF Slides**: Course presentation slides
+- **PDF Notes**: Professor's notes or notes from other students
+- **Previous `.tex` notes** (optional but recommended): Ensures style consistency
+
+No external cloud storage required.
 
 Once the generation process is complete, an interactive review interface opens. Here, the user can inspect the output and use two tools: **Editor Mode**, to issue rewrite commands on specific LaTeX paragraphs, and **Tutor Mode**, to ask direct questions about the content explained by the professor. 
 
@@ -54,7 +71,8 @@ The repository is organized to separate the core engine from the user interface 
   * `config_loader.py`: Manages configuration loading and access.
   * `audio_processing.py`: Handles audio extraction, VAD, and transcription.
   * `vision_processing.py`: Handles video stream analysis and dynamic keyframe extraction.
-  * `llm_engine.py`: Manages the API calls to the multimodal LLM and data synchronization.
+  * `document_processing.py`: Handles PDF processing with intelligent chunking (word-based estimation).
+  * `llm_gen_engine.py`: Manages the API calls to the multimodal LLM and data synchronization.
   * `interactive_agent.py`: Manages the Editor and Tutor logic using cached memory.
 * `prompts/`: Isolated `.txt` files containing the system instructions and behavioral rules for the LLM.
 * `notebooks/`: The executable cloud notebook (`.ipynb`) containing the user interface.
@@ -78,7 +96,7 @@ This software is distributed under the **GNU GPL v3** license. It is free and op
 
 ## 🇮🇹 Italiano
 
-**AI-Studio** è un software open source sviluppato per automatizzare la conversione di videolezioni universitarie in appunti strutturati in formato LaTeX. Il sistema elabora parallelamente la traccia audio e il flusso visivo delle presentazioni o della proiezione video, generando un documento accademico coerente con i materiali di studio preesistenti.
+**AI-Studio** è un software open source sviluppato per automatizzare la conversione di videolezioni universitarie in appunti strutturati in formato LaTeX. Il sistema supporta **combinazioni flessibili di input**: videolezioni, slide PDF del corso, appunti del professore o di altri studenti, o qualsiasi combinazione di questi. Lo studente può scegliere quali materiali fornire in base alla disponibilità, e il sistema li elaborerà in parallelo per generare un documento accademico coerente con i materiali di studio preesistenti.
 
 ### Manuale Tecnico: Architettura e Funzionamento
 
@@ -109,9 +127,26 @@ Per velocizzare il caricamento di video di grandi dimensioni, è possibile compr
 ffmpeg -i "lezione.mp4" -vcodec libx264 -crf 28 -preset faster -acodec aac -b:a 128k "lezione_compressa.mp4"
 ```
 
-**Sostituisci** `"lezione.mp4"` e `"lezione_compressa.mp4"` con i nomi appropriati dei tuoi file. Questo comando riduce notevolmente le dimensioni del file mantenendo una qualità sufficiente per la trascrizione e l'estrazione dei frame. 
+**Sostituisci** `"lezione.mp4"` e `"lezione_compressa.mp4"` con i nomi appropriati dei tuoi file. Questo comando riduce notevolmente le dimensioni del file mantenendo una qualità sufficiente per la trascrizione e l'estrazione dei frame.
 
-Per avviare la generazione degli appunti, non è necessario configurare storage cloud esterni. È sufficiente fornire in input il video della lezione tramite upload diretto temporaneo oppure inserendo un URL. Nel caso in cui la videolezione risieda su una piattaforma universitaria protetta, il download lato server è supportato caricando un semplice file `cookies.txt` estratto dal proprio browser. In questa fase preliminare è fortemente consigliato caricare anche il file `.tex` degli appunti pregressi per far allineare lo stile di scrittura e per ottenere un risultato in linea agli appunti già presi durante le lezioni passate del corso in esame.
+#### Fonti di Input
+
+AI-Studio supporta **diverse combinazioni di input** - scegli quello che hai a disposizione:
+
+- **Solo video**: Elaborazione tradizionale della videolezione (trascrizione audio + estrazione keyframe)
+- **Solo slide PDF**: Processa le slide del corso senza video
+- **Solo appunti PDF**: Genera appunti dagli appunti del professore o di altri studenti
+- **Fonti combinate**: Qualsiasi combinazione di video + slide + appunti
+
+Il sistema divide intelligentemente i documenti PDF (fino a 20.000 parole per chunk) e unisce tutte le fonti in una pipeline unificata ottimizzata per la capacità di input di 1M token di Gemini.
+
+**Per iniziare**, carica semplicemente i materiali scelti:
+- **Video**: Upload diretto o URL (supporta portali protetti tramite `cookies.txt`)
+- **Slide PDF**: Slide delle presentazioni del corso
+- **Appunti PDF**: Appunti del professore o di altri studenti
+- **Appunti `.tex` precedenti** (opzionale ma consigliato): Garantisce coerenza nello stile
+
+Non è necessaria alcuna configurazione di storage cloud esterno.
 
 Completata la stesura, si apre un'interfaccia di revisione interattiva. Da qui l'utente può esaminare l'output e utilizzare due strumenti: la **Modalità Editor**, per impartire comandi di riscrittura su specifici paragrafi LaTeX, e la **Modalità Tutor**, per fare domande dirette sui contenuti spiegati dal professore.
 
@@ -126,6 +161,7 @@ Il repository è organizzato per separare il motore di elaborazione dall'interfa
   * `config_loader.py`: Gestisce il caricamento e l'accesso alla configurazione.
   * `audio_processing.py`: Gestisce l'estrazione audio, il VAD e la trascrizione.
   * `vision_processing.py`: Gestisce l'analisi del flusso video e l'estrazione dinamica dei frame.
+  * `document_processing.py`: Gestisce l'elaborazione PDF con chunking intelligente (stima basata su parole).
   * `llm_gen_engine.py`: Gestisce le chiamate API all'LLM multimodale e la sincronizzazione dei dati.
   * `interactive_agent.py`: Gestisce la logica dell'Editor e del Tutor sfruttando la cache.
 * `prompts/`: File di testo (`.txt`) isolati contenenti le istruzioni di sistema e le regole comportamentali per l'LLM.
