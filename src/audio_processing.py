@@ -1,6 +1,7 @@
 import subprocess
 from faster_whisper import WhisperModel
 import os
+import json
 from config_loader import config
 
 def extract_audio(video_path: str, audio_output_path: str = None) -> str:
@@ -60,13 +61,38 @@ def transcribe_with_timestamps(audio_path: str, model_size: str = None) -> list:
         
     return transcript_data
 
-def process_video_audio(video_path: str) -> list:
-    """Pipeline completa: estrazione audio + trascrizione + cleanup."""
+def process_video_audio(video_path: str, save_transcript: bool = True, 
+                        transcript_output_dir: str = "data/transcripts") -> tuple:
+    """
+    Pipeline completa: estrazione audio + trascrizione + cleanup.
+    
+    Args:
+        video_path: Path al file video
+        save_transcript: Se True, salva la trascrizione come JSON su disco
+        transcript_output_dir: Directory dove salvare la trascrizione
+        
+    Returns:
+        tuple: (transcript_data, transcript_filepath)
+    """
     temp_audio = extract_audio(video_path)
     transcript = transcribe_with_timestamps(temp_audio)
+    
+    # Salvataggio trascrizione su disco
+    transcript_filepath = None
+    if save_transcript:
+        os.makedirs(transcript_output_dir, exist_ok=True)
+        
+        # Nome file basato sul nome del video
+        video_basename = os.path.splitext(os.path.basename(video_path))[0]
+        transcript_filepath = os.path.join(transcript_output_dir, f"{video_basename}_transcript.json")
+        
+        with open(transcript_filepath, 'w', encoding='utf-8') as f:
+            json.dump(transcript, f, ensure_ascii=False, indent=2)
+        
+        print(f"💾 Trascrizione salvata: {transcript_filepath}")
     
     # Pulizia del file temporaneo (se auto_cleanup è abilitato in config)
     if config.auto_cleanup and os.path.exists(temp_audio):
         os.remove(temp_audio)
         
-    return transcript
+    return transcript, transcript_filepath
