@@ -211,6 +211,11 @@ class Config:
         return self.get('vision.output_dir', 'extracted_frames')
     
     @property
+    def frame_sample_interval(self) -> int:
+        """Intervallo in secondi tra i frame da analizzare (default: 5s)"""
+        return self.get('vision.frame_sample_interval', 5)
+    
+    @property
     def change_threshold(self) -> float:
         return self.get('vision.change_threshold', 0.03)
     

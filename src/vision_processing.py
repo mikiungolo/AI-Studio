@@ -25,8 +25,8 @@ def extract_keyframes(video_path: str, output_dir: str = None, threshold: float 
     cap = cv2.VideoCapture(video_path)
     # Interroga il video per sapere quanti fotogrammi ci sono per secondo (es. 30 o 60)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    # Processeremo esattamente 1 frame per ogni secondo di video reale
-    frame_interval = int(fps) 
+    # Processeremo esattamente 1 frame ogni N secondi (configurabile in config.yaml)
+    frame_interval = int(fps * config.frame_sample_interval) 
     
     keyframes = []
     prev_frame = None

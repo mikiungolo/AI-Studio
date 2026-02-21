@@ -1,5 +1,6 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from config_loader import config
 
 def _load_text_file(filepath: str) -> str:
@@ -22,24 +23,19 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
     if prompt_path is None:
         prompt_path = config.editor_prompt_path
     
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
     system_instruction = _load_text_file(prompt_path)
     
-    # Configurazione severissima caricata da config.yaml
-    generation_config = genai.types.GenerationConfig(
+    # Configurazione severissima
+    generation_config = types.GenerateContentConfig(
         temperature=config.editor_temperature,
         top_p=config.editor_top_p,
         top_k=config.editor_top_k,
-        max_output_tokens=config.editor_max_tokens
+        max_output_tokens=config.editor_max_tokens,
+        system_instruction=system_instruction
     )
     
-    model = genai.GenerativeModel(
-        model_name=config.model_name,
-        system_instruction=system_instruction,
-        generation_config=generation_config
-    )
-    
-    # Costruiamo il prompt strutturato per non far confondere l'LLM
+    # Prompt strutturato
     prompt_str = (
         f"CONTESTO DELLA LEZIONE (Trascrizione):\n{lesson_transcript}\n\n"
         f"CODICE LATEX DA MODIFICARE:\n```latex\n{latex_snippet}\n```\n\n"
@@ -47,10 +43,13 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
         "Esegui la modifica e restituisci ESCLUSIVAMENTE il nuovo codice LaTeX."
     )
     
-    response = model.generate_content(prompt_str)
+    response = client.models.generate_content(
+        model=config.model_name,
+        contents=prompt_str,
+        config=generation_config
+    )
     
-    # Pulizia di sicurezza: rimuove eventuali formattazioni markdown "```latex" residue 
-    # che Gemini potrebbe inserire nonostante i divieti
+    # Pulizia output
     clean_output = response.text.replace("```latex", "").replace("```", "").strip()
     return clean_output
 
@@ -67,21 +66,16 @@ def run_tutor_agent(user_question: str, lesson_transcript: str,
     if prompt_path is None:
         prompt_path = config.tutor_prompt_path
     
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
     system_instruction = _load_text_file(prompt_path)
     
-    # Configurazione caricata da config.yaml
-    generation_config = genai.types.GenerationConfig(
+    # Configurazione
+    generation_config = types.GenerateContentConfig(
         temperature=config.tutor_temperature,
         top_p=config.tutor_top_p,
         top_k=config.tutor_top_k,
-        max_output_tokens=config.tutor_max_tokens
-    )
-    
-    model = genai.GenerativeModel(
-        model_name=config.model_name,
-        system_instruction=system_instruction,
-        generation_config=generation_config
+        max_output_tokens=config.tutor_max_tokens,
+        system_instruction=system_instruction
     )
     
     prompt_str = (
@@ -90,5 +84,10 @@ def run_tutor_agent(user_question: str, lesson_transcript: str,
         "Rispondi seguendo le regole del tuo prompt (empatia, plain text puro)."
     )
     
-    response = model.generate_content(prompt_str)
+    response = client.models.generate_content(
+        model=config.model_name,
+        contents=prompt_str,
+        config=generation_config
+    )
+    
     return response.text.strip()

@@ -1,6 +1,7 @@
 import os
 import time
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from typing import List, Dict
 from config_loader import config
 
@@ -66,70 +67,63 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
     if prompt_path is None:
         prompt_path = config.writer_prompt_path
     
-    genai.configure(api_key=api_key)
+    # Nuova API: crea il client
+    client = genai.Client(api_key=api_key)
     
     system_instruction = _load_text_file(prompt_path)
     previous_notes = _load_text_file(history_path)
     
     if previous_notes:
-        # Inietta gli appunti passati direttamente nelle istruzioni di sistema
         system_instruction += f"\n\nNOTES UNTIL THE LAST LESSON (Use as context or base to generate new notes):\n{previous_notes}"
 
-    # Configurazione parametri modello (caricati da config.yaml)
-    generation_config = genai.types.GenerationConfig(
+    # Configurazione generazione
+    generation_config = types.GenerateContentConfig(
         temperature=config.writer_temperature,
         top_p=config.writer_top_p,
         top_k=config.writer_top_k,
-        max_output_tokens=config.writer_max_tokens
+        max_output_tokens=config.writer_max_tokens,
+        system_instruction=system_instruction
     )
-
-    # Inizializza il modello caricando le istruzioni di sistema e i vincoli di generazione
-    model = genai.GenerativeModel(
-        model_name=config.model_name,
-        system_instruction=system_instruction,
-        generation_config=generation_config
-    )
-    
-    # Avvia una sessione chat per mantenere la continuità logica tra i chunk
-    chat_session = model.start_chat(history=[])
     
     chunks = create_chunks(transcript, keyframes, chunk_duration_sec=900)
     final_latex_document = []
     
-    # vengono inviati in una sessione si chat i singoli chank uno per volta per non saturare il limite 
-    # di token che prevede il modello. Il tutto tramite chat session perchè ci aiuta a dare continuità di logica 
-    # nelle risposte ottenute. Ogni risposta viene unita opportunamente per ottenere interamente gli appunti della lezione.
+    # Storia della conversazione per continuità
+    chat_history = []
+    
     for idx, chunk in enumerate(chunks):
-        uploaded_files = []
+        # Prepara il contenuto multimodale
+        parts = [f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}"]
         
-        # Inizializza il payload multimodale (Lista Python che il modello sa decodificare)
-        payload = [f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}"]
-        
-        # Carica le immagini sui server di Google e aggiungi il 'puntatore' al payload
+        # Aggiungi immagini come blob
         for img_path in chunk['images']:
             try:
-                g_file = genai.upload_file(path=img_path)
-                uploaded_files.append(g_file)
-                payload.append(g_file)
+                with open(img_path, 'rb') as f:
+                    image_data = f.read()
+                parts.append(types.Part.from_bytes(data=image_data, mime_type='image/jpeg'))
             except Exception as e:
-                print(f"Errore caricamento immagine {img_path}: {e}")
-                
-        # Invia il pacchetto multimodale intero alla sessione di chat
-        response = chat_session.send_message(payload)
-        final_latex_document.append(response.text)
+                print(f"Errore lettura immagine {img_path}: {e}")
         
-        # CLEANUP: Elimina le immagini dai server Google per efficienza e privacy
-        for g_file in uploaded_files:
-            try:
-                genai.delete_file(g_file.name)
-            except Exception as e:
-                print(f"Errore eliminazione file {g_file.name}: {e}")
+        # Costruisci i contenuti per la chat
+        contents = chat_history + [types.Content(role='user', parts=parts)]
         
-        # Garantisce di non superare il limite RPM configurato
+        # Genera risposta
+        response = client.models.generate_content(
+            model=config.model_name,
+            contents=contents,
+            config=generation_config
+        )
+        
+        # Estrai testo e aggiorna storia
+        response_text = response.text
+        final_latex_document.append(response_text)
+        
+        chat_history.append(types.Content(role='user', parts=parts))
+        chat_history.append(types.Content(role='model', parts=[response_text]))
+        
+        # Rate limiting
         if idx < len(chunks) - 1:
             wait_time = 60 / config.rpm
-            if config.debug_mode:
-                print(f"Attesa di {wait_time:.1f} secondi per rispettare il limite di {config.rpm} RPM...")
             time.sleep(wait_time)
             
     return "\n\n".join(final_latex_document)

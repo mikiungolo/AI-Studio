@@ -46,7 +46,7 @@ llm:
 audio:
   # Modello Whisper per trascrizione (tiny, base, small, medium, large-v3)
   # Nota: Modelli più grandi = migliore qualità ma più lenti
-  whisper_model_size: "large-v3"
+  whisper_model_size: "distil-large-v3"
   
   # Device di computazione (cpu, cuda, auto)
   device: "cuda"  # Usa GPU se disponibile, altrimenti fallback su CPU
@@ -74,6 +74,10 @@ audio:
 vision:
   # Directory dove salvare i frame estratti (organizzato in data/)
   output_dir: "data/frames"
+  
+  # Intervallo di campionamento frame (secondi)
+  # Es: 5 = analizza 1 frame ogni 5 secondi di video
+  frame_sample_interval: 5
   
   # Threshold di cambiamento visivo per catturare un keyframe (0.0-1.0)
   # 0.03 = 3% dello schermo deve cambiare per considerarlo una nuova slide

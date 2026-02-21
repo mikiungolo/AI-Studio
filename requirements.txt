@@ -12,8 +12,8 @@ faster-whisper>=1.0.3
 huggingface-hub>=0.20.0
 
 # --- LLM (Google Gemini API) ---
-# SDK ufficiale Google per Gemini (manteniamo la versione stabile)
-google-generativeai>=0.8.0
+# Nuova SDK ufficiale Google Gemini
+google-genai>=0.2.0
 # Protobuf necessario per Gemini API
 protobuf>=4.25.0
 
