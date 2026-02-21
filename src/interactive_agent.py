@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+from google import genai
 from config_loader import config
 
 def _load_text_file(filepath: str) -> str:
