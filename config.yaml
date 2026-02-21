@@ -72,8 +72,8 @@ audio:
 # CONFIGURAZIONI VISION PROCESSING (Computer Vision)
 # --------------------------------------------------------------------
 vision:
-  # Directory dove salvare i frame estratti
-  output_dir: "extracted_frames"
+  # Directory dove salvare i frame estratti (organizzato in data/)
+  output_dir: "data/frames"
   
   # Threshold di cambiamento visivo per catturare un keyframe (0.0-1.0)
   # 0.03 = 3% dello schermo deve cambiare per considerarlo una nuova slide
