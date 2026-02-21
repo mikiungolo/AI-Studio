@@ -10,7 +10,9 @@ def extract_audio(video_path: str, audio_output_path: str = None) -> str:
     I parametri di qualità audio sono caricati da config.yaml.
     """
     if audio_output_path is None:
-        audio_output_path = config.temp_audio_filename
+        # Crea il file temporaneo nella stessa directory del video
+        video_dir = os.path.dirname(video_path)
+        audio_output_path = os.path.join(video_dir, config.temp_audio_filename)
     
     # Usa FFmpeg per estrarre l'audio con parametri configurabili
     command = [
