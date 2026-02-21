@@ -20,7 +20,24 @@ Finally, the system features a **Refactoring Module and a Virtual Tutor** operat
 
 ### User Manual: Setup and Usage
 
-AI-Studio is designed to be executed entirely within a cloud-based notebook environment (e.g., Google Colab), leveraging cloud GPUs for audio and vision processing without draining local hardware resources. 
+AI-Studio is designed to be executed entirely within a cloud-based notebook environment (e.g., Google Colab), leveraging cloud GPUs for audio and vision processing without draining local hardware resources.
+
+#### GPU Configuration in Google Colab
+For optimal performance, it is **highly recommended to configure the runtime environment with T4 GPU**:
+1. In the Colab menu, select **Runtime** → **Change runtime type**
+2. Choose **T4 GPU** as the hardware accelerator
+3. Save the settings
+
+This configuration significantly accelerates audio transcription (Whisper) and video frame extraction.
+
+#### Video Upload Optimization
+To speed up the upload of large video files, you can compress the file using **ffmpeg** before uploading:
+
+```bash
+ffmpeg -i "lecture.mp4" -vcodec libx264 -crf 28 -preset faster -acodec aac -b:a 128k "lecture_compressed.mp4"
+```
+
+**Replace** `"lecture.mp4"` and `"lecture_compressed.mp4"` with the appropriate names of your files. This command significantly reduces file size while maintaining sufficient quality for transcription and frame extraction. 
 
 To start generating notes, no external cloud storage is required. Users simply provide the video via direct temporary upload or URL. For lectures hosted on protected university portals, server-side downloading is supported by uploading a simple `cookies.txt` file extracted from the user's browser. During this preliminary phase, it is highly recommended to also upload the `.tex` file of previous notes to align the writing style and obtain a result consistent with the notes already taken during past lectures of the course under study.
 
@@ -75,7 +92,24 @@ Il sistema prevede inoltre un **Modulo di Refactoring e un Tutor virtuale** che 
 
 ### Manuale Utente: Setup e Utilizzo
 
-L'utilizzo operativo di AI-Studio è progettato per avvenire all'interno di un ambiente notebook in cloud (es. Google Colab), permettendo di sfruttare l'accelerazione hardware (GPU) fornita dai server per la trascrizione e la computer vision, senza gravare sulle risorse del computer locale. 
+L'utilizzo operativo di AI-Studio è progettato per avvenire all'interno di un ambiente notebook in cloud (es. Google Colab), permettendo di sfruttare l'accelerazione hardware (GPU) fornita dai server per la trascrizione e la computer vision, senza gravare sulle risorse del computer locale.
+
+#### Configurazione GPU in Google Colab
+Per ottenere prestazioni ottimali, è **fortemente consigliato configurare l'ambiente di runtime con GPU T4**:
+1. Nel menu di Colab, seleziona **Runtime** → **Cambia tipo di runtime**
+2. Scegli **T4 GPU** come acceleratore hardware
+3. Salva le impostazioni
+
+Questa configurazione accelera significativamente la trascrizione audio (Whisper) e l'estrazione dei frame video.
+
+#### Ottimizzazione Upload Video
+Per velocizzare il caricamento di video di grandi dimensioni, è possibile comprimere il file utilizzando **ffmpeg** prima dell'upload:
+
+```bash
+ffmpeg -i "lezione.mp4" -vcodec libx264 -crf 28 -preset faster -acodec aac -b:a 128k "lezione_compressa.mp4"
+```
+
+**Sostituisci** `"lezione.mp4"` e `"lezione_compressa.mp4"` con i nomi appropriati dei tuoi file. Questo comando riduce notevolmente le dimensioni del file mantenendo una qualità sufficiente per la trascrizione e l'estrazione dei frame. 
 
 Per avviare la generazione degli appunti, non è necessario configurare storage cloud esterni. È sufficiente fornire in input il video della lezione tramite upload diretto temporaneo oppure inserendo un URL. Nel caso in cui la videolezione risieda su una piattaforma universitaria protetta, il download lato server è supportato caricando un semplice file `cookies.txt` estratto dal proprio browser. In questa fase preliminare è fortemente consigliato caricare anche il file `.tex` degli appunti pregressi per far allineare lo stile di scrittura e per ottenere un risultato in linea agli appunti già presi durante le lezioni passate del corso in esame.
 

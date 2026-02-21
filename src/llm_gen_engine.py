@@ -93,7 +93,7 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
     
     for idx, chunk in enumerate(chunks):
         # Prepara il contenuto multimodale
-        parts = [f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}"]
+        parts = [types.Part.from_text(f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}")]
         
         # Aggiungi immagini come blob
         for img_path in chunk['images']:
