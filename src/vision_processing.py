@@ -5,22 +5,36 @@ from config_loader import config
 def _save_keyframe(frame, timestamp: float, output_dir: str, keyframes_list: list):
     """Funzione helper per salvare il frame e aggiornare la lista."""
     frame_name = f"{output_dir}/slide_{timestamp:.0f}s.jpg"
-    cv2.imwrite(frame_name, frame)
-    keyframes_list.append({"timestamp": timestamp, "path": frame_name})
+    try:
+        success = cv2.imwrite(frame_name, frame)
+        if not success:
+            raise RuntimeError(f"cv2.imwrite fallito per {frame_name}")
+        keyframes_list.append({"timestamp": timestamp, "path": frame_name})
+    except Exception as e:
+        print(f"⚠️ Errore salvataggio frame a {timestamp}s: {e}")
 
 def extract_keyframes(video_path: str, output_dir: str = None, threshold: float = None) -> list:
     """
     Estrae i keyframe dal video quando rileva cambiamenti significativi.
     Tutti i parametri sono configurabili tramite config.yaml.
     """
+    # Validazione input
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video non trovato: {video_path}")
+    
     if output_dir is None:
         output_dir = config.vision_output_dir
     
     if threshold is None:
         threshold = config.change_threshold
     
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not (0 < threshold < 1):
+        raise ValueError(f"Threshold deve essere tra 0 e 1, ricevuto: {threshold}")
+    
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+    except OSError as e:
+        raise RuntimeError(f"Impossibile creare directory output: {output_dir}") from e
 
     cap = cv2.VideoCapture(video_path)
     # Interroga il video per sapere quanti fotogrammi ci sono per secondo (es. 30 o 60)

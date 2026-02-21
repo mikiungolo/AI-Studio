@@ -1,5 +1,4 @@
 import os
-from google import genai
 from google.genai import types
 from config_loader import config
 
@@ -23,8 +22,13 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
     if prompt_path is None:
         prompt_path = config.editor_prompt_path
     
-    client = genai.Client(api_key=api_key)
-    system_instruction = _load_text_file(prompt_path)
+    # Usa client condiviso da config
+    client = config.genai_client
+    
+    try:
+        system_instruction = _load_text_file(prompt_path)
+    except Exception as e:
+        raise FileNotFoundError(f"Impossibile caricare prompt da {prompt_path}: {e}") from e
     
     # Configurazione severissima
     generation_config = types.GenerateContentConfig(
@@ -43,14 +47,16 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
         "Esegui la modifica e restituisci ESCLUSIVAMENTE il nuovo codice LaTeX."
     )
     
-    response = client.models.generate_content(
-        model=config.model_name,
-        contents=[types.Content(role='user', parts=[types.Part(text=prompt_str)])],
-        config=generation_config
-    )
+    try:
+        response = client.models.generate_content(
+            model=config.model_name,
+            contents=[types.Content(role='user', parts=[types.Part(text=prompt_str)])],
+            config=generation_config
+        )
+        clean_output = response.text.replace("```latex", "").replace("```", "").strip()
+    except Exception as e:
+        raise RuntimeError(f"Errore chiamata API Gemini (Editor): {e}") from e
     
-    # Pulizia output
-    clean_output = response.text.replace("```latex", "").replace("```", "").strip()
     return clean_output
 
 def run_tutor_agent(user_question: str, lesson_transcript: str, 
@@ -66,8 +72,13 @@ def run_tutor_agent(user_question: str, lesson_transcript: str,
     if prompt_path is None:
         prompt_path = config.tutor_prompt_path
     
-    client = genai.Client(api_key=api_key)
-    system_instruction = _load_text_file(prompt_path)
+    # Usa client condiviso da config
+    client = config.genai_client
+    
+    try:
+        system_instruction = _load_text_file(prompt_path)
+    except Exception as e:
+        raise FileNotFoundError(f"Impossibile caricare prompt da {prompt_path}: {e}") from e
     
     # Configurazione
     generation_config = types.GenerateContentConfig(
@@ -84,10 +95,12 @@ def run_tutor_agent(user_question: str, lesson_transcript: str,
         "Rispondi seguendo le regole del tuo prompt (empatia, plain text puro)."
     )
     
-    response = client.models.generate_content(
-        model=config.model_name,
-        contents=[types.Content(role='user', parts=[types.Part(text=prompt_str)])],
-        config=generation_config
-    )
-    
-    return response.text.strip()
+    try:
+        response = client.models.generate_content(
+            model=config.model_name,
+            contents=[types.Content(role='user', parts=[types.Part(text=prompt_str)])],
+            config=generation_config
+        )
+        return response.text.strip()
+    except Exception as e:
+        raise RuntimeError(f"Errore chiamata API Gemini (Tutor): {e}") from e

@@ -92,6 +92,29 @@ vision:
   pixel_threshold: 25   # Range: 0-255
 
 # --------------------------------------------------------------------
+# CONFIGURAZIONI DOCUMENT PROCESSING (PDF)
+# --------------------------------------------------------------------
+documents:
+  # Massimo numero di parole per chunk PDF
+  # 
+  # OTTIMIZZAZIONE PER GEMINI 2.0 FLASH (1M input tokens):
+  # - 20,000 parole ≈ 30K-40K token (considerando overhead PDF, formule LaTeX, immagini embedded)
+  # - Lascia margine per: system prompt (~1K), immagini video (~2K-5K/frame), chat history
+  # - Permette di processare ~25-30 chunks in parallelo senza superare 1M token
+  # 
+  # NOTE:
+  # - Per PDF molto densi (testo + formule): ridurre a 15000 parole
+  # - Per PDF leggeri (slide con immagini): può arrivare a 25000 parole
+  # - La modalità 'use_estimation=True' (default) usa campionamento veloce
+  max_words_per_chunk: 20000
+  
+  # Fallback: pagine per chunk se PyPDF2 non installato
+  pages_per_chunk: 10
+  
+  # Strategie di chunking: "full" (intero PDF in 1 chunk) o "intelligent" (basato su parole)
+  chunking_strategy: "intelligent"
+
+# --------------------------------------------------------------------
 # CONFIGURAZIONI PERCORSI FILE
 # --------------------------------------------------------------------
 paths:
@@ -102,25 +125,10 @@ paths:
   writer_prompt: "writer_system_prompt.txt"
   editor_prompt: "reviewer_editor_prompt.txt"
   tutor_prompt: "professor_q&a_prompt.txt"
-  
-  # Directory output finale
-  output_dir: "output"
-  
-  # Nome file LaTeX generato
-  output_latex_filename: "lecture_notes.tex"
 
 # --------------------------------------------------------------------
 # CONFIGURAZIONI GENERALI SISTEMA
 # --------------------------------------------------------------------
 system:
-  # Modalità debug: stampa log aggiuntivi
-  debug_mode: false
-  
   # Abilita cleanup automatico dei file temporanei
   auto_cleanup: true
-  
-  # Timeout per operazioni di rete (secondi)
-  network_timeout: 300
-  
-  # Lingua preferita (auto, it, en)
-  preferred_language: "auto"  # auto = rilevamento automatico dal video

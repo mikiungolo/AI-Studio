@@ -26,7 +26,19 @@ def extract_audio(video_path: str, audio_output_path: str = None) -> str:
         audio_output_path
     ]
     
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Errore estrazione audio da {video_path}: {e.stderr}") from e
+    except FileNotFoundError:
+        raise RuntimeError(
+            "ffmpeg non trovato. Installalo con: apt-get install ffmpeg (Linux) "
+            "o brew install ffmpeg (Mac) o scarica da https://ffmpeg.org"
+        ) from None
+    
+    if not os.path.exists(audio_output_path):
+        raise RuntimeError(f"File audio non creato: {audio_output_path}")
+    
     return audio_output_path
 
 def transcribe_with_timestamps(audio_path: str, model_size: str = None) -> list:
@@ -34,23 +46,32 @@ def transcribe_with_timestamps(audio_path: str, model_size: str = None) -> list:
     Trascrizione con Whisper + VAD (Voice Activity Detection).
     Tutti i parametri sono caricati da config.yaml.
     """
+    if not os.path.exists(audio_path):
+        raise FileNotFoundError(f"File audio non trovato: {audio_path}")
+    
     if model_size is None:
         model_size = config.whisper_model_size
     
     # Inizializza il modello Whisper con parametri configurabili
-    model = WhisperModel(
-        model_size, 
-        device=config.audio_device, 
-        compute_type=config.compute_type
-    )
+    try:
+        model = WhisperModel(
+            model_size, 
+            device=config.audio_device, 
+            compute_type=config.compute_type
+        )
+    except Exception as e:
+        raise RuntimeError(f"Errore inizializzazione Whisper (model={model_size}, device={config.audio_device}): {e}") from e
     
     # Trascrizione con VAD integrato
-    segments, info = model.transcribe(
-        audio_path,
-        beam_size=config.beam_size,
-        vad_filter=config.vad_enabled,
-        vad_parameters=dict(min_silence_duration_ms=config.vad_min_silence_ms)
-    )
+    try:
+        segments, info = model.transcribe(
+            audio_path,
+            beam_size=config.beam_size,
+            vad_filter=config.vad_enabled,
+            vad_parameters=dict(min_silence_duration_ms=config.vad_min_silence_ms)
+        )
+    except Exception as e:
+        raise RuntimeError(f"Errore durante trascrizione di {audio_path}: {e}") from e
     
     transcript_data = []
     
@@ -82,16 +103,19 @@ def process_video_audio(video_path: str, save_transcript: bool = True,
     # Salvataggio trascrizione su disco
     transcript_filepath = None
     if save_transcript:
-        os.makedirs(transcript_output_dir, exist_ok=True)
-        
-        # Nome file basato sul nome del video
-        video_basename = os.path.splitext(os.path.basename(video_path))[0]
-        transcript_filepath = os.path.join(transcript_output_dir, f"{video_basename}_transcript.json")
-        
-        with open(transcript_filepath, 'w', encoding='utf-8') as f:
-            json.dump(transcript, f, ensure_ascii=False, indent=2)
-        
-        print(f"💾 Trascrizione salvata: {transcript_filepath}")
+        try:
+            os.makedirs(transcript_output_dir, exist_ok=True)
+            
+            # Nome file basato sul nome del video
+            video_basename = os.path.splitext(os.path.basename(video_path))[0]
+            transcript_filepath = os.path.join(transcript_output_dir, f"{video_basename}_transcript.json")
+            
+            with open(transcript_filepath, 'w', encoding='utf-8') as f:
+                json.dump(transcript, f, ensure_ascii=False, indent=2)
+            
+            print(f"💾 Trascrizione salvata: {transcript_filepath}")
+        except IOError as e:
+            raise RuntimeError(f"Errore salvataggio trascrizione in {transcript_filepath}: {e}") from e
     
     # Pulizia del file temporaneo (se auto_cleanup è abilitato in config)
     if config.auto_cleanup and os.path.exists(temp_audio):

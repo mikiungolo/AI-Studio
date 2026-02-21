@@ -1,6 +1,5 @@
 import os
 import time
-from google import genai
 from google.genai import types
 from typing import List, Dict
 from config_loader import config
@@ -16,9 +15,16 @@ def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_
     """
     Divide la lezione in blocchi logici senza tagliare le frasi.
     La durata del chunk è configurabile in config.yaml.
+    
+    NOTA: Se transcript contiene già chunks unificati (da merge_sources),
+    ritorna direttamente quelli invece di creare nuovi chunks.
     """
     if chunk_duration_sec is None:
         chunk_duration_sec = config.chunk_duration_sec
+    
+    # Check se sono già chunks unificati (contengono 'images' o 'files')
+    if transcript and ('images' in transcript[0] or 'files' in transcript[0]):
+        return transcript  # Già nel formato corretto
     
     chunks = []
     current_chunk_text = []
@@ -39,7 +45,8 @@ def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_
             # Salva il pacchetto e resetta i contatori per il blocco successivo
             chunks.append({
                 "text": "\n".join(current_chunk_text),
-                "images": current_chunk_images.copy()
+                "images": current_chunk_images.copy(),
+                "files": []
             })
             current_chunk_text = []
             current_chunk_images = []
@@ -50,7 +57,11 @@ def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_
         for kf in keyframes:
             if kf['timestamp'] >= chunk_start_time:
                 current_chunk_images.append(kf['path'])
-        chunks.append({"text": "\n".join(current_chunk_text), "images": current_chunk_images})
+        chunks.append({
+            "text": "\n".join(current_chunk_text), 
+            "images": current_chunk_images,
+            "files": []
+        })
         
     return chunks
 
@@ -60,6 +71,12 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
     Motore principale che coordina LLM, memorie e generazione LaTeX.
     Tutti i parametri LLM sono caricati da config.yaml.
     """
+    # Validazione input
+    if not transcript:
+        raise ValueError("Transcript vuoto: impossibile generare appunti senza trascrizione")
+    
+    if not isinstance(transcript, list) or not all('text' in seg for seg in transcript):
+        raise ValueError("Transcript malformato: deve essere una lista di dict con chiave 'text'")
     
     if api_key is None:
         api_key = config.api_key
@@ -67,10 +84,14 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
     if prompt_path is None:
         prompt_path = config.writer_prompt_path
     
-    # Nuova API: crea il client
-    client = genai.Client(api_key=api_key)
+    # Usa client condiviso da config (lazy-loaded)
+    client = config.genai_client
     
-    system_instruction = _load_text_file(prompt_path)
+    try:
+        system_instruction = _load_text_file(prompt_path)
+    except Exception as e:
+        raise FileNotFoundError(f"Impossibile caricare prompt da {prompt_path}: {e}") from e
+    
     previous_notes = _load_text_file(history_path)
     
     if previous_notes:
@@ -85,7 +106,7 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
         system_instruction=system_instruction
     )
     
-    chunks = create_chunks(transcript, keyframes, chunk_duration_sec=900)
+    chunks = create_chunks(transcript, keyframes, chunk_duration_sec=config.chunk_duration_sec)
     final_latex_document = []
     
     # Storia della conversazione per continuità
@@ -95,27 +116,36 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
         # Prepara il contenuto multimodale
         parts = [types.Part(text=f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}")]
         
-        # Aggiungi immagini come blob
-        for img_path in chunk['images']:
-            try:
-                with open(img_path, 'rb') as f:
-                    image_data = f.read()
-                parts.append(types.Part.from_bytes(data=image_data, mime_type='image/jpeg'))
-            except Exception as e:
-                print(f"Errore lettura immagine {img_path}: {e}")
+        # Aggiungi immagini come blob (da keyframes video)
+        if 'images' in chunk and chunk['images']:
+            for img_path in chunk['images']:
+                try:
+                    with open(img_path, 'rb') as f:
+                        image_data = f.read()
+                    parts.append(types.Part.from_bytes(data=image_data, mime_type='image/jpeg'))
+                except Exception as e:
+                    print(f"Errore lettura immagine {img_path}: {e}")
+        
+        # Aggiungi file PDF (da documenti caricati)
+        if 'files' in chunk and chunk['files']:
+            for pdf_part in chunk['files']:
+                parts.append(pdf_part)
         
         # Costruisci i contenuti per la chat
         contents = chat_history + [types.Content(role='user', parts=parts)]
         
         # Genera risposta
-        response = client.models.generate_content(
-            model=config.model_name,
-            contents=contents,
-            config=generation_config
-        )
+        try:
+            response = client.models.generate_content(
+                model=config.model_name,
+                contents=contents,
+                config=generation_config
+            )
+            response_text = response.text
+        except Exception as e:
+            raise RuntimeError(f"Errore chiamata API Gemini per chunk {idx+1}/{len(chunks)}: {e}") from e
         
         # Estrai testo e aggiorna storia
-        response_text = response.text
         final_latex_document.append(response_text)
         
         chat_history.append(types.Content(role='user', parts=parts))

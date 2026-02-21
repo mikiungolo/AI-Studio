@@ -1,11 +1,11 @@
-"""
+""")
 Modulo per la gestione centralizzata della configurazione di AI-Studio.
 Carica il file config.yaml e fornisce accesso type-safe ai parametri.
 """
 
 import yaml
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from pathlib import Path
 
 class Config:
@@ -254,30 +254,30 @@ class Config:
         filename = self.get('paths.tutor_prompt', 'professor_q&a_prompt.txt')
         return f"{prompts_dir}/{filename}"
     
-    @property
-    def output_dir(self) -> str:
-        return self.get('paths.output_dir', 'output')
-    
-    @property
-    def output_latex_filename(self) -> str:
-        return self.get('paths.output_latex_filename', 'lecture_notes.tex')
-    
     # --- SYSTEM ---
-    @property
-    def debug_mode(self) -> bool:
-        return self.get('system.debug_mode', False)
-    
     @property
     def auto_cleanup(self) -> bool:
         return self.get('system.auto_cleanup', True)
     
+    # --- GOOGLE GENAI CLIENT (Lazy-loaded singleton) ---
     @property
-    def network_timeout(self) -> int:
-        return self.get('system.network_timeout', 300)
-    
-    @property
-    def preferred_language(self) -> str:
-        return self.get('system.preferred_language', 'auto')
+    def genai_client(self):
+        """
+        Client Google Gemini condiviso (lazy-loaded).
+        Crea il client una sola volta e lo riutilizza.
+        """
+        if not hasattr(self, '_genai_client'):
+            try:
+                from google import genai
+                self._genai_client = genai.Client(api_key=self.api_key)
+            except ImportError:
+                raise RuntimeError(
+                    "Libreria google-genai non installata. "
+                    "Installa con: pip install google-genai>=0.2.0"
+                ) from None
+            except Exception as e:
+                raise RuntimeError(f"Errore creazione client Gemini: {e}") from e
+        return self._genai_client
 
 
 # Singleton globale accessibile da tutti i moduli
