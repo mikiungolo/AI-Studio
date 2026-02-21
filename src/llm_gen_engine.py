@@ -1,6 +1,6 @@
 import os
 import time
-from google import genai
+import google.generativeai as genai
 from typing import List, Dict
 from config_loader import config
 
