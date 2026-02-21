@@ -93,7 +93,7 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
     
     for idx, chunk in enumerate(chunks):
         # Prepara il contenuto multimodale
-        parts = [types.Part.from_text(f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}")]
+        parts = [types.Part(text=f"=== CHUNK {idx + 1} di {len(chunks)} ===\nTrascrizione:\n{chunk['text']}")]
         
         # Aggiungi immagini come blob
         for img_path in chunk['images']:
@@ -119,7 +119,7 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
         final_latex_document.append(response_text)
         
         chat_history.append(types.Content(role='user', parts=parts))
-        chat_history.append(types.Content(role='model', parts=[response_text]))
+        chat_history.append(types.Content(role='model', parts=[types.Part(text=response_text)]))
         
         # Rate limiting
         if idx < len(chunks) - 1:

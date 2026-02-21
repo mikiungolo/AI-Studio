@@ -45,7 +45,7 @@ def run_editor_agent(latex_snippet: str, user_request: str, lesson_transcript: s
     
     response = client.models.generate_content(
         model=config.model_name,
-        contents=prompt_str,
+        contents=[types.Content(role='user', parts=[types.Part(text=prompt_str)])],
         config=generation_config
     )
     
@@ -86,7 +86,7 @@ def run_tutor_agent(user_question: str, lesson_transcript: str,
     
     response = client.models.generate_content(
         model=config.model_name,
-        contents=prompt_str,
+        contents=[types.Content(role='user', parts=[types.Part(text=prompt_str)])],
         config=generation_config
     )
     
