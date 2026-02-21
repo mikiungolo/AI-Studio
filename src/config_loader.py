@@ -85,12 +85,23 @@ class Config:
     # --- LLM ---
     @property
     def api_key(self) -> str:
-        """API Key di Google Gemini."""
+        """
+        API Key di Google Gemini.
+        Legge SEMPRE la variabile d'ambiente GOOGLE_API_KEY a runtime,
+        bypassando il config.yaml. Questo permette di settare la chiave
+        dinamicamente nel notebook dopo l'import del modulo.
+        """
+        # Prima prova a leggere direttamente dalla variabile d'ambiente
+        env_key = os.environ.get('GOOGLE_API_KEY', '').strip()
+        if env_key:
+            return env_key
+        
+        # Se non c'è nella variabile d'ambiente, leggi dal config
         key = self.get('llm.api_key', '')
         if key.startswith("${"):
             raise ValueError(
                 f"API Key non configurata. Imposta la variabile d'ambiente GOOGLE_API_KEY "
-                f"o modifica config.yaml"
+                f"nel notebook prima di eseguire la cella di processing."
             )
         return key
     
