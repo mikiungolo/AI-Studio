@@ -71,14 +71,16 @@ def create_pdf_chunk_from_pages(pdf_path: str, start_page: int, end_page: int) -
 
 def create_document_chunks(pdf_path: str,
                           document_name: str,
+                          document_type: str = "slides",
                           max_words_per_chunk: Optional[int] = None,
                           use_estimation: bool = True,
                           fallback_pages_per_chunk: int = 10) -> List[Dict]:
     """
     Divide PDF in chunks basati su conteggio parole.
+    document_type: "slides" o "notes" (determina il comportamento del LLM)
     use_estimation=True (default): stima veloce campionando prime 10 pagine
     use_estimation=False: conta esatto (lento, per PDF piccoli)
-    Returns: [{"text": str, "files": [types.Part]}]
+    Returns: [{"text": str, "files": [types.Part], "doc_type": str}]
     """
     if max_words_per_chunk is None:
         max_words_per_chunk = config.get('documents.max_words_per_chunk', 20000)
@@ -95,7 +97,8 @@ def create_document_chunks(pdf_path: str,
         
         chunks.append({
             "text": f"DOCUMENTO: {document_name}\nAnalizza questo documento e genera appunti strutturati.",
-            "files": [pdf_part]
+            "files": [pdf_part],
+            "doc_type": document_type
         })
         return chunks
     
@@ -127,7 +130,8 @@ def create_document_chunks(pdf_path: str,
                         f"Contenuto: {page_range} (~{estimated_words} parole stimate)\n"
                         f"Analizza questo segmento e genera appunti strutturati."
                     ),
-                    "files": [pdf_part]
+                    "files": [pdf_part],
+                    "doc_type": document_type
                 })
                 
                 chunk_num += 1
@@ -164,7 +168,8 @@ def create_document_chunks(pdf_path: str,
                         f"Contenuto: {page_range} ({current_word_count} parole)\n"
                         f"Analizza questo segmento e genera appunti strutturati."
                     ),
-                    "files": [pdf_part]
+                    "files": [pdf_part],
+                    "doc_type": document_type
                 })
                 
                 current_chunk_start = page_num
@@ -184,7 +189,8 @@ def create_document_chunks(pdf_path: str,
                     f"Contenuto: {page_range} ({current_word_count} parole)\n"
                     f"Analizza questo segmento e genera appunti strutturati."
                 ),
-                "files": [pdf_part]
+                "files": [pdf_part],
+                "doc_type": document_type
             })
         
         total_words = sum(count_words(t) for t in page_texts)
@@ -202,7 +208,8 @@ def create_document_chunks(pdf_path: str,
         
         return [{
             "text": f"DOCUMENTO: {document_name}\nAnalizza questo documento e genera appunti strutturati.",
-            "files": [pdf_part]
+            "files": [pdf_part],
+            "doc_type": document_type
         }]
 
 
@@ -237,13 +244,21 @@ def estimate_words_per_page(pdf_path: str, sample_pages: int = 10) -> float:
 
 def merge_sources(video_transcript: List[Dict] = None,
                  video_keyframes: List[Dict] = None,
-                 pdf_chunks: List[Dict] = None) -> Tuple[List[Dict], str]:
-    """Unifica video + PDF in formato comune. Returns: (chunks, description)"""
+                 pdf_chunks: List[Dict] = None) -> Tuple[List[Dict], str, str]:
+    """Unifica video + PDF in formato comune. Returns: (chunks, description, input_mode)
+    
+    input_mode può essere:
+    - 'video': solo video o video + qualsiasi PDF
+    - 'only_slides': solo PDF di tipo slides
+    - 'only_notes': solo PDF di tipo notes (appunti da trascrivere)
+    - 'mixed_pdf': mix di slides + notes senza video
+    """
     if not any([video_transcript, pdf_chunks]):
         raise ValueError("Almeno una fonte deve essere fornita (video o PDF)")
     
     unified_chunks = []
     sources = []
+    has_video = False
     
     if video_transcript and video_keyframes:
         from llm_gen_engine import create_chunks
@@ -260,18 +275,35 @@ def merge_sources(video_transcript: List[Dict] = None,
                 "files": []
             })
         sources.append("videolezione")
+        has_video = True
     
+    pdf_types_present = set()
     if pdf_chunks:
         for chunk in pdf_chunks:
             unified_chunks.append({
                 "text": chunk["text"],
                 "images": [],
-                "files": chunk["files"]
+                "files": chunk["files"],
+                "doc_type": chunk.get("doc_type", "slides")
             })
+            pdf_types_present.add(chunk.get("doc_type", "slides"))
         sources.append("documenti PDF")
     
     source_description = " + ".join(sources)
-    return unified_chunks, source_description
+    
+    # Determina modalità di input
+    if has_video:
+        input_mode = "video"
+    elif "notes" in pdf_types_present and "slides" not in pdf_types_present:
+        input_mode = "only_notes"
+    elif "slides" in pdf_types_present and "notes" not in pdf_types_present:
+        input_mode = "only_slides"
+    elif pdf_chunks:
+        input_mode = "mixed_pdf"
+    else:
+        input_mode = "video"
+    
+    return unified_chunks, source_description, input_mode
 
 
 def process_documents(pdf_paths: List[str], 
@@ -293,6 +325,7 @@ def process_documents(pdf_paths: List[str],
         pdf_chunks = create_document_chunks(
             pdf_path=pdf_path,
             document_name=f"{doc_name} ({doc_type})",
+            document_type=doc_type,
             max_words_per_chunk=max_words_per_chunk
         )
         

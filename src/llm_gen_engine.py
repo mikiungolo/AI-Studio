@@ -66,10 +66,16 @@ def create_chunks(transcript: List[Dict], keyframes: List[Dict], chunk_duration_
     return chunks
 
 def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str = None,
-                   prompt_path: str = None, history_path: str = "") -> str:
+                   prompt_path: str = None, history_path: str = "", input_mode: str = "video") -> str:
     """
     Motore principale che coordina LLM, memorie e generazione LaTeX.
     Tutti i parametri LLM sono caricati da config.yaml.
+    
+    input_mode può essere:
+    - 'video': videolezione (prompt standard multi-source)
+    - 'only_slides': solo slide PDF (prompt espansione)
+    - 'only_notes': solo appunti studenti PDF (prompt trascrizione fedele)
+    - 'mixed_pdf': mix slides + notes (prompt espansione con fusion)
     """
     # Validazione input
     if not transcript:
@@ -81,8 +87,19 @@ def generate_notes(transcript: List[Dict], keyframes: List[Dict], api_key: str =
     if api_key is None:
         api_key = config.api_key
     
+    # Selezione automatica del prompt in base al tipo di input
     if prompt_path is None:
-        prompt_path = config.writer_prompt_path
+        base_path = config.writer_prompt_path.replace('writer_system_prompt.txt', '')
+        
+        if input_mode == "only_notes":
+            prompt_path = base_path + 'writer_system_prompt_notes.txt'
+            print("📝 Modalità TRASCRIZIONE: appunti studenti → LaTeX fedele")
+        elif input_mode in ["only_slides", "mixed_pdf"]:
+            prompt_path = base_path + 'writer_system_prompt_pdf.txt'
+            print("📄 Modalità ESPANSIONE: slide/documenti → appunti dettagliati")
+        else:
+            prompt_path = config.writer_prompt_path
+            print("🎬 Modalità STANDARD: videolezione multi-source")
     
     # Usa client condiviso da config (lazy-loaded)
     client = config.genai_client
