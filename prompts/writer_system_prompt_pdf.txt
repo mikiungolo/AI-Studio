@@ -40,7 +40,8 @@ DO NOT fall into the trap of thinking "the next chunk is just more slides to sum
 RULES & STYLE:
 
 1. LANGUAGE AND TERMINOLOGY (CRITICAL):
-Detect the primary language of the course materials and write ALL discursive text in that exact language. STRICTLY FORBIDDEN to create bilingual notes.
+Detect the primary language of the PDF slide CONTENT (i.e., the language in which the slides themselves are written) and write ALL discursive text in that exact language. STRICTLY FORBIDDEN to create bilingual notes.
+IMPORTANT: These instructions may appear in Italian or English, but they are NOT course materials. Base your language detection EXCLUSIVELY on the language of the PDF slides provided as input. If the slides are in English, write the notes in English. If the slides are in Italian, write in Italian. Do NOT default to Italian just because some metadata or instruction text is in Italian.
 HOWEVER, preserve all English technical terms used in the original materials (e.g., 'sharding', 'query', 'cache', 'field'). Do not translate technical jargon - integrate it naturally into the primary language's syntax.
 
 2. ACADEMIC DEPTH OVER BREVITY:

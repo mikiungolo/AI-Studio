@@ -96,7 +96,7 @@ def create_document_chunks(pdf_path: str,
         pdf_part = types.Part.from_bytes(data=pdf_data, mime_type='application/pdf')
         
         chunks.append({
-            "text": f"DOCUMENTO: {document_name}\nAnalizza questo documento e genera appunti strutturati.",
+            "text": f"DOCUMENT: {document_name}\nAnalyze this document and generate structured notes.",
             "files": [pdf_part],
             "doc_type": document_type
         })
@@ -122,13 +122,13 @@ def create_document_chunks(pdf_path: str,
                 pdf_part = types.Part.from_bytes(data=chunk_pdf_bytes, mime_type='application/pdf')
                 
                 estimated_words = int((end_page - start_page) * words_per_page)
-                page_range = f"pagine {start_page + 1}-{end_page}"
+                page_range = f"pages {start_page + 1}-{end_page}"
                 
                 chunks.append({
                     "text": (
-                        f"DOCUMENTO: {document_name} (CHUNK {chunk_num})\n"
-                        f"Contenuto: {page_range} (~{estimated_words} parole stimate)\n"
-                        f"Analizza questo segmento e genera appunti strutturati."
+                        f"DOCUMENT: {document_name} (CHUNK {chunk_num})\n"
+                        f"Content: {page_range} (~{estimated_words} estimated words)\n"
+                        f"Analyze this segment and generate structured notes."
                     ),
                     "files": [pdf_part],
                     "doc_type": document_type
@@ -161,12 +161,12 @@ def create_document_chunks(pdf_path: str,
                 chunk_pdf_bytes = create_pdf_chunk_from_pages(pdf_path, current_chunk_start, page_num)
                 pdf_part = types.Part.from_bytes(data=chunk_pdf_bytes, mime_type='application/pdf')
                 
-                page_range = f"pagine {current_chunk_start + 1}-{page_num}"
+                page_range = f"pages {current_chunk_start + 1}-{page_num}"
                 chunks.append({
                     "text": (
-                        f"DOCUMENTO: {document_name} (CHUNK {chunk_num})\n"
-                        f"Contenuto: {page_range} ({current_word_count} parole)\n"
-                        f"Analizza questo segmento e genera appunti strutturati."
+                        f"DOCUMENT: {document_name} (CHUNK {chunk_num})\n"
+                        f"Content: {page_range} ({current_word_count} words)\n"
+                        f"Analyze this segment and generate structured notes."
                     ),
                     "files": [pdf_part],
                     "doc_type": document_type
@@ -182,12 +182,12 @@ def create_document_chunks(pdf_path: str,
             chunk_pdf_bytes = create_pdf_chunk_from_pages(pdf_path, current_chunk_start, total_pages)
             pdf_part = types.Part.from_bytes(data=chunk_pdf_bytes, mime_type='application/pdf')
             
-            page_range = f"pagine {current_chunk_start + 1}-{total_pages}"
+            page_range = f"pages {current_chunk_start + 1}-{total_pages}"
             chunks.append({
                 "text": (
-                    f"DOCUMENTO: {document_name} (CHUNK {chunk_num})\n"
-                    f"Contenuto: {page_range} ({current_word_count} parole)\n"
-                    f"Analizza questo segmento e genera appunti strutturati."
+                    f"DOCUMENT: {document_name} (CHUNK {chunk_num})\n"
+                    f"Content: {page_range} ({current_word_count} words)\n"
+                    f"Analyze this segment and generate structured notes."
                 ),
                 "files": [pdf_part],
                 "doc_type": document_type
@@ -207,7 +207,7 @@ def create_document_chunks(pdf_path: str,
         pdf_part = types.Part.from_bytes(data=pdf_data, mime_type='application/pdf')
         
         return [{
-            "text": f"DOCUMENTO: {document_name}\nAnalizza questo documento e genera appunti strutturati.",
+            "text": f"DOCUMENT: {document_name}\nAnalyze this document and generate structured notes.",
             "files": [pdf_part],
             "doc_type": document_type
         }]
